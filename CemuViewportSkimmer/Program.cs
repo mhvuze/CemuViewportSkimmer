@@ -23,31 +23,46 @@ namespace CemuViewportSkimmer
             if (args.Length < 1) { Console.WriteLine("ERROR: Please specify input file."); return; }
             input = args[0];
 
-            // Check arguments
+            // Check file
             if (!File.Exists(input)) { Console.WriteLine("ERROR: Specified input file doesn't exist."); return; }
 
             // Warning
             Console.WriteLine("Depending on your CPU and the log size, the processing might take some time.\n");
 
-            // Skim through log file
-            foreach (string line in File.ReadLines(input))
+            try
             {
-                if (line.Contains("GX2SetScissor"))
+                // Skim through log file
+                foreach (string line in File.ReadLines(input))
                 {
-                    // [11:05:33] GX2SetScissor(0, 0, 1280, 720)
-                    string cut_line = line.Substring(25);
-                    cut_line = cut_line.Remove(cut_line.Length - 1);
-                    unfiltered_lines.Add(cut_line);
+                    if (line.Contains("GX2SetScissor"))
+                    {
+                        string cut_line = line.Substring(25);
+                        cut_line = cut_line.Remove(cut_line.Length - 1);
+                        unfiltered_lines.Add(cut_line);
+                    }
+                }
+
+                // Filter for duplicates
+                filtered_lines = unfiltered_lines.Distinct().ToList();
+
+                // Print final results
+                if (filtered_lines.Count == 0)
+                {
+                    Console.WriteLine("No viewport resolutions were found. Did you enable GX2 API logging in Cemu?");
+                }
+                else
+                {
+                    foreach (string line in filtered_lines)
+                    {
+                        Console.WriteLine(line);
+                    }
+
+                    Console.WriteLine("\nFound {0} unique viewport resolutions and a total of {1}.", filtered_lines.Count, unfiltered_lines.Count);
                 }
             }
-
-            // Filter for duplicates
-            filtered_lines = unfiltered_lines.Distinct().ToList();
-
-            // Print final results
-            foreach (string line in filtered_lines)
+            catch
             {
-                Console.WriteLine(line);
+                Console.WriteLine("ERROR: Something went wrong. Is Cemu still opened?");
             }
         }
     }
